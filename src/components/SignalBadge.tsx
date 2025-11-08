@@ -11,31 +11,37 @@ interface SignalBadgeProps {
 
 export function SignalBadge({ rating, confidence, size = 'md', showIcon = true }: SignalBadgeProps) {
   const sizeClasses = {
-    sm: 'text-xs px-2 py-0.5',
-    md: 'text-sm px-3 py-1',
-    lg: 'text-base px-4 py-1.5',
+    sm: 'text-[10px] px-2 py-1 gap-1',
+    md: 'text-xs px-3 py-1.5 gap-1.5',
+    lg: 'text-sm px-4 py-2 gap-2',
+  };
+
+  const iconSizes = {
+    sm: 'h-2.5 w-2.5',
+    md: 'h-3 w-3',
+    lg: 'h-3.5 w-3.5',
   };
 
   const ratingConfig = {
     BUY: {
-      bg: 'bg-success/20',
+      bg: 'bg-success/15',
       border: 'border-success/30',
-      text: 'text-success-foreground',
-      glow: 'hover:shadow-[0_0_20px_hsl(var(--success-glow)/0.3)]',
+      text: 'text-success',
+      glow: 'shadow-[0_0_12px_hsl(var(--success)/0.2)]',
       icon: TrendingUp,
     },
     SELL: {
-      bg: 'bg-danger/20',
+      bg: 'bg-danger/15',
       border: 'border-danger/30',
-      text: 'text-danger-foreground',
-      glow: 'hover:shadow-[0_0_20px_hsl(var(--danger-glow)/0.3)]',
+      text: 'text-danger',
+      glow: 'shadow-[0_0_12px_hsl(var(--danger)/0.2)]',
       icon: TrendingDown,
     },
     HOLD: {
-      bg: 'bg-warning/20',
-      border: 'border-warning/30',
-      text: 'text-warning-foreground',
-      glow: 'hover:shadow-[0_0_20px_hsl(var(--warning)/0.2)]',
+      bg: 'bg-neutral/15',
+      border: 'border-neutral/30',
+      text: 'text-neutral',
+      glow: 'shadow-[0_0_12px_hsl(var(--neutral)/0.15)]',
       icon: Minus,
     },
   };
@@ -46,7 +52,7 @@ export function SignalBadge({ rating, confidence, size = 'md', showIcon = true }
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border font-mono font-semibold transition-all',
+        'inline-flex items-center rounded-lg border font-mono font-bold uppercase tracking-wide transition-all',
         config.bg,
         config.border,
         config.text,
@@ -54,10 +60,10 @@ export function SignalBadge({ rating, confidence, size = 'md', showIcon = true }
         sizeClasses[size]
       )}
     >
-      {showIcon && <Icon className="h-3.5 w-3.5" />}
+      {showIcon && <Icon className={iconSizes[size]} strokeWidth={2.5} />}
       <span>{rating}</span>
       {confidence !== undefined && (
-        <span className="opacity-75 font-normal">
+        <span className="opacity-60 font-semibold">
           {confidence}%
         </span>
       )}

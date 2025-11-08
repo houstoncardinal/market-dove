@@ -1,28 +1,29 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, TrendingUp } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Activity, DollarSign, TrendingUp, BarChart3 } from 'lucide-react';
 import { mockQuotes, generateMockCandles } from '@/lib/mockData';
 import { generateSignal } from '@/lib/signals';
-import { SMA, EMA, RSI, MACD, BollingerBands, ATR, VWAP } from '@/lib/indicators';
+import { SMA, EMA, RSI, MACD, BollingerBands } from '@/lib/indicators';
 import { PriceTag } from '@/components/PriceTag';
 import { SignalBadge } from '@/components/SignalBadge';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Header } from '@/components/Header';
 import { 
   ComposedChart, 
   Line, 
-  Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   Legend, 
   ResponsiveContainer,
-  ReferenceLine
+  ReferenceLine,
+  Area
 } from 'recharts';
 import { format } from 'date-fns';
 import { TimeRange } from '@/types/market';
+import { cn } from '@/lib/utils';
 
 export default function SymbolDetail() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -32,7 +33,7 @@ export default function SymbolDetail() {
     sma20: true,
     sma50: true,
     sma200: false,
-    rsi: true,
+    rsi: false,
     macd: false,
     bb: false,
   });
@@ -83,9 +84,9 @@ export default function SymbolDetail() {
   if (!quote || !symbol) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="glass-card p-8 text-center">
-          <p className="text-muted-foreground">Symbol not found</p>
-          <Button onClick={() => navigate('/')} className="mt-4">
+        <Card className="glass-card p-8 text-center max-w-md">
+          <p className="text-muted-foreground mb-4">Symbol not found</p>
+          <Button onClick={() => navigate('/')} variant="outline">
             Back to Watchlist
           </Button>
         </Card>
@@ -93,48 +94,79 @@ export default function SymbolDetail() {
     );
   }
 
+  const isPositive = quote.change > 0;
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-card/30 backdrop-blur-xl sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/')}
-              className="hover:bg-primary/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex-1">
+      <Header />
+
+      {/* Hero Section */}
+      <div className="border-b border-border/50 bg-gradient-to-b from-background to-card/30">
+        <div className="container mx-auto px-4 py-6 md:py-8">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            {/* Left: Symbol Info */}
+            <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold">{symbol}</h1>
-                <SignalBadge rating={signal.rating} confidence={signal.confidence} />
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{symbol}</h1>
+                <SignalBadge rating={signal.rating} confidence={signal.confidence} size="md" />
               </div>
-              <p className="text-sm text-muted-foreground">{quote.name} • {quote.exchange}</p>
+              <p className="text-sm md:text-base text-muted-foreground font-medium">
+                {quote.name} • {quote.exchange}
+              </p>
+              
+              <div className="flex items-baseline gap-4">
+                <PriceTag
+                  value={quote.price}
+                  change={quote.change}
+                  changePct={quote.changePct}
+                  size="xl"
+                  showChange={false}
+                />
+                <div className={cn(
+                  "flex items-center gap-1 font-mono text-lg font-semibold",
+                  isPositive ? "text-success" : "text-danger"
+                )}>
+                  {isPositive && '+'}{quote.change.toFixed(2)} ({isPositive && '+'}{quote.changePct.toFixed(2)}%)
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Quick Stats */}
+            <div className="grid grid-cols-2 gap-3 md:min-w-[300px]">
+              {[
+                { label: 'Market Cap', value: `$${((quote.marketCap || 0) / 1e9).toFixed(1)}B`, icon: DollarSign },
+                { label: 'P/E Ratio', value: quote.pe?.toFixed(2) || 'N/A', icon: Activity },
+                { label: 'Day High', value: `$${quote.high?.toFixed(2) || 'N/A'}`, icon: TrendingUp },
+                { label: 'Day Low', value: `$${quote.low?.toFixed(2) || 'N/A'}`, icon: BarChart3 },
+              ].map((stat) => (
+                <div key={stat.label} className="glass-card p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <stat.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                      {stat.label}
+                    </p>
+                  </div>
+                  <p className="font-mono font-bold text-sm">{stat.value}</p>
+                </div>
+              ))}
             </div>
           </div>
-          
-          <PriceTag
-            value={quote.price}
-            change={quote.change}
-            changePct={quote.changePct}
-            size="xl"
-          />
         </div>
-      </header>
+      </div>
 
       <main className="container mx-auto px-4 py-6">
         {/* Time Range Selector */}
-        <div className="flex gap-2 mb-4 overflow-x-auto">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
           {(['1D', '5D', '1M', '3M', '6M', '1Y', '5Y'] as TimeRange[]).map((range) => (
             <Button
               key={range}
               variant={timeRange === range ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTimeRange(range)}
-              className={timeRange === range ? 'bg-primary' : ''}
+              className={cn(
+                "font-mono font-semibold min-w-[60px]",
+                timeRange === range && 'bg-primary shadow-lg shadow-primary/20'
+              )}
             >
               {range}
             </Button>
@@ -142,33 +174,45 @@ export default function SymbolDetail() {
         </div>
 
         {/* Chart */}
-        <Card className="glass-card p-4 mb-6">
-          <div className="h-[400px]">
+        <Card className="glass-card p-4 md:p-6 mb-6">
+          <div className="h-[400px] md:h-[500px]">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <defs>
+                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={(value) => format(new Date(value), 'MMM dd')}
                   stroke="hsl(var(--muted-foreground))"
+                  style={{ fontSize: 12 }}
                 />
-                <YAxis stroke="hsl(var(--muted-foreground))" domain={['auto', 'auto']} />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))" 
+                  domain={['auto', 'auto']}
+                  style={{ fontSize: 12 }}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '0.5rem',
+                    padding: '12px',
                   }}
                   labelFormatter={(value) => format(new Date(value), 'PPP')}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
                 
-                <Line
+                <Area
                   type="monotone"
                   dataKey="price"
                   stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={false}
+                  strokeWidth={2.5}
+                  fill="url(#colorPrice)"
                   name="Price"
                 />
                 
@@ -177,9 +221,8 @@ export default function SymbolDetail() {
                     type="monotone"
                     dataKey="sma20"
                     stroke="hsl(var(--success))"
-                    strokeWidth={1.5}
+                    strokeWidth={2}
                     dot={false}
-                    strokeDasharray="5 5"
                     name="SMA 20"
                   />
                 )}
@@ -189,9 +232,8 @@ export default function SymbolDetail() {
                     type="monotone"
                     dataKey="sma50"
                     stroke="hsl(var(--warning))"
-                    strokeWidth={1.5}
+                    strokeWidth={2}
                     dot={false}
-                    strokeDasharray="5 5"
                     name="SMA 50"
                   />
                 )}
@@ -201,9 +243,8 @@ export default function SymbolDetail() {
                     type="monotone"
                     dataKey="sma200"
                     stroke="hsl(var(--danger))"
-                    strokeWidth={1.5}
+                    strokeWidth={2}
                     dot={false}
-                    strokeDasharray="5 5"
                     name="SMA 200"
                   />
                 )}
@@ -214,7 +255,8 @@ export default function SymbolDetail() {
                       type="monotone"
                       dataKey="bbUpper"
                       stroke="hsl(var(--muted-foreground))"
-                      strokeWidth={1}
+                      strokeWidth={1.5}
+                      strokeDasharray="5 5"
                       dot={false}
                       name="BB Upper"
                     />
@@ -222,7 +264,8 @@ export default function SymbolDetail() {
                       type="monotone"
                       dataKey="bbLower"
                       stroke="hsl(var(--muted-foreground))"
-                      strokeWidth={1}
+                      strokeWidth={1.5}
+                      strokeDasharray="5 5"
                       dot={false}
                       name="BB Lower"
                     />
@@ -234,7 +277,7 @@ export default function SymbolDetail() {
                     y={signal.levels.entry[0]}
                     stroke="hsl(var(--success))"
                     strokeDasharray="3 3"
-                    label="Entry"
+                    label={{ value: 'Entry', fill: 'hsl(var(--success))', fontSize: 12 }}
                   />
                 )}
               </ComposedChart>
@@ -242,70 +285,68 @@ export default function SymbolDetail() {
           </div>
           
           {/* Indicator Toggles */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            <Button
-              size="sm"
-              variant={showIndicators.sma20 ? 'default' : 'outline'}
-              onClick={() => setShowIndicators({ ...showIndicators, sma20: !showIndicators.sma20 })}
-            >
-              SMA 20
-            </Button>
-            <Button
-              size="sm"
-              variant={showIndicators.sma50 ? 'default' : 'outline'}
-              onClick={() => setShowIndicators({ ...showIndicators, sma50: !showIndicators.sma50 })}
-            >
-              SMA 50
-            </Button>
-            <Button
-              size="sm"
-              variant={showIndicators.sma200 ? 'default' : 'outline'}
-              onClick={() => setShowIndicators({ ...showIndicators, sma200: !showIndicators.sma200 })}
-            >
-              SMA 200
-            </Button>
-            <Button
-              size="sm"
-              variant={showIndicators.bb ? 'default' : 'outline'}
-              onClick={() => setShowIndicators({ ...showIndicators, bb: !showIndicators.bb })}
-            >
-              Bollinger Bands
-            </Button>
+          <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t border-border/30">
+            {[
+              { key: 'sma20', label: 'SMA 20', color: 'success' },
+              { key: 'sma50', label: 'SMA 50', color: 'warning' },
+              { key: 'sma200', label: 'SMA 200', color: 'danger' },
+              { key: 'bb', label: 'Bollinger Bands', color: 'muted' },
+            ].map((indicator) => (
+              <Button
+                key={indicator.key}
+                size="sm"
+                variant={showIndicators[indicator.key as keyof typeof showIndicators] ? 'default' : 'outline'}
+                onClick={() => setShowIndicators({ 
+                  ...showIndicators, 
+                  [indicator.key]: !showIndicators[indicator.key as keyof typeof showIndicators] 
+                })}
+                className={cn(
+                  "font-mono text-xs",
+                  showIndicators[indicator.key as keyof typeof showIndicators] && `bg-${indicator.color} hover:bg-${indicator.color}/90`
+                )}
+              >
+                {indicator.label}
+              </Button>
+            ))}
           </div>
         </Card>
 
         {/* Signal Details */}
         <Card className="glass-card p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Signal Analysis</h3>
+          <h3 className="text-lg md:text-xl font-bold mb-6 flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            Signal Analysis
+          </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Trade Levels */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {signal.levels.entry && (
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Entry Zone</p>
-                <p className="font-mono font-semibold text-success">
+              <div className="p-4 rounded-lg bg-success/10 border border-success/30">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Entry Zone</p>
+                <p className="font-mono font-bold text-lg text-success">
                   ${signal.levels.entry[0].toFixed(2)} - ${signal.levels.entry[1].toFixed(2)}
                 </p>
               </div>
             )}
             {signal.levels.stop && (
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Stop Loss</p>
-                <p className="font-mono font-semibold text-danger">
+              <div className="p-4 rounded-lg bg-danger/10 border border-danger/30">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Stop Loss</p>
+                <p className="font-mono font-bold text-lg text-danger">
                   ${signal.levels.stop.toFixed(2)}
                 </p>
               </div>
             )}
             {signal.levels.tp && signal.levels.tp.length > 0 && (
               <>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Take Profit 1</p>
-                  <p className="font-mono font-semibold text-success">
+                <div className="p-4 rounded-lg bg-success/10 border border-success/30">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Take Profit 1</p>
+                  <p className="font-mono font-bold text-lg text-success">
                     ${signal.levels.tp[0].toFixed(2)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Take Profit 2</p>
-                  <p className="font-mono font-semibold text-success">
+                <div className="p-4 rounded-lg bg-success/10 border border-success/30">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Take Profit 2</p>
+                  <p className="font-mono font-bold text-lg text-success">
                     ${signal.levels.tp[1].toFixed(2)}
                   </p>
                 </div>
@@ -313,51 +354,35 @@ export default function SymbolDetail() {
             )}
           </div>
 
+          {/* Rule Checks */}
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-muted-foreground mb-3">Rule Checks</h4>
-            {signal.flags.map((flag) => (
+            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">Rule Analysis</h4>
+            {signal.flags.map((flag, idx) => (
               <div
                 key={flag.id}
-                className={`p-3 rounded-lg border ${
+                className={cn(
+                  "p-4 rounded-lg border transition-all",
                   flag.passed
-                    ? 'bg-success/10 border-success/30'
-                    : 'bg-muted/20 border-border/30'
-                }`}
+                    ? 'bg-success/10 border-success/30 hover:bg-success/15'
+                    : 'bg-muted/10 border-border/30 hover:bg-muted/15'
+                )}
+                style={{ animationDelay: `${idx * 50}ms` }}
               >
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-start gap-3">
                   <div
-                    className={`w-2 h-2 rounded-full ${
-                      flag.passed ? 'bg-success' : 'bg-muted-foreground'
-                    }`}
+                    className={cn(
+                      "w-2 h-2 rounded-full mt-1.5 flex-shrink-0",
+                      flag.passed ? 'bg-success shadow-lg shadow-success/50' : 'bg-muted-foreground'
+                    )}
                   />
-                  <span className="text-sm font-medium">
+                  <p className="text-sm flex-1">
                     {flag.note}
-                  </span>
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         </Card>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="glass-card p-4">
-            <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
-            <p className="font-mono font-bold">${((quote.marketCap || 0) / 1e9).toFixed(1)}B</p>
-          </Card>
-          <Card className="glass-card p-4">
-            <p className="text-xs text-muted-foreground mb-1">P/E Ratio</p>
-            <p className="font-mono font-bold">{quote.pe?.toFixed(2) || 'N/A'}</p>
-          </Card>
-          <Card className="glass-card p-4">
-            <p className="text-xs text-muted-foreground mb-1">Day High</p>
-            <p className="font-mono font-bold">${quote.high?.toFixed(2) || 'N/A'}</p>
-          </Card>
-          <Card className="glass-card p-4">
-            <p className="text-xs text-muted-foreground mb-1">Day Low</p>
-            <p className="font-mono font-bold">${quote.low?.toFixed(2) || 'N/A'}</p>
-          </Card>
-        </div>
       </main>
     </div>
   );
