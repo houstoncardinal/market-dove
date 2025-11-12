@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { WatchlistItem, PortfolioPosition, Alert, DataSource, IndicatorConfig } from '@/types/market';
+import { WatchlistItem, PortfolioPosition, Alert, DataSource, IndicatorConfig, AssetMode } from '@/types/market';
 
 interface AppState {
   // Settings
+  assetMode: AssetMode;
   dataSource: DataSource;
   alphaVantageKey: string;
   indicatorConfig: IndicatorConfig;
@@ -27,6 +28,7 @@ interface AppState {
   toggleAlert: (id: string) => void;
   
   // Settings actions
+  setAssetMode: (mode: AssetMode) => void;
   setDataSource: (source: DataSource) => void;
   setAlphaVantageKey: (key: string) => void;
   updateIndicatorConfig: (config: Partial<IndicatorConfig>) => void;
@@ -37,6 +39,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       // Default settings
+      assetMode: 'stock',
       dataSource: 'yahoo',
       alphaVantageKey: '',
       indicatorConfig: {
@@ -50,7 +53,7 @@ export const useAppStore = create<AppState>()(
       },
       disclaimerAccepted: false,
       
-      // Default watchlist
+      // Default watchlist (stocks)
       watchlist: [
         { symbol: 'AAPL', addedAt: Date.now() - 86400000 },
         { symbol: 'MSFT', addedAt: Date.now() - 86400000 },
@@ -117,6 +120,7 @@ export const useAppStore = create<AppState>()(
           ),
         })),
       
+      setAssetMode: (mode) => set({ assetMode: mode }),
       setDataSource: (source) => set({ dataSource: source }),
       setAlphaVantageKey: (key) => set({ alphaVantageKey: key }),
       updateIndicatorConfig: (config) =>

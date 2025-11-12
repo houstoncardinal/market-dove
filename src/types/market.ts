@@ -21,9 +21,12 @@ export type Quote = {
   marketCap?: number;
   pe?: number;
   eps?: number;
+  volume?: number;
   currency?: string;
   lastUpdate?: number;
 };
+
+export type AssetMode = 'stock' | 'crypto';
 
 export type DataSource = 'stooq' | 'yahoo' | 'alphavantage';
 

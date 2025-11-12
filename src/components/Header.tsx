@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Settings, PieChart, Bell, Menu, X, TrendingUp, Search } from 'lucide-react';
+import { Settings, PieChart, Bell, Menu, X, TrendingUp, Search, Bitcoin, LineChart } from 'lucide-react';
 import { SymbolSearch } from './SymbolSearch';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/store/appStore';
 
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { assetMode, setAssetMode } = useAppStore();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -45,6 +47,34 @@ export function Header() {
               </p>
             </div>
           </button>
+
+          {/* Asset Mode Toggle - Desktop */}
+          <div className="hidden md:flex items-center gap-1 p-1 rounded-xl bg-card-glass/30 border border-border/30">
+            <button
+              onClick={() => setAssetMode('stock')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                assetMode === 'stock'
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <LineChart className="h-4 w-4" />
+              Stocks
+            </button>
+            <button
+              onClick={() => setAssetMode('crypto')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                assetMode === 'crypto'
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Bitcoin className="h-4 w-4" />
+              Crypto
+            </button>
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-2">
@@ -87,6 +117,40 @@ export function Header() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border/30 py-4 space-y-4 animate-fade-in">
+            {/* Asset Mode Toggle - Mobile */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-card-glass/30 border border-border/30">
+              <button
+                onClick={() => {
+                  setAssetMode('stock');
+                  setMobileMenuOpen(false);
+                }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                  assetMode === 'stock'
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    : "text-muted-foreground"
+                )}
+              >
+                <LineChart className="h-4 w-4" />
+                Stocks
+              </button>
+              <button
+                onClick={() => {
+                  setAssetMode('crypto');
+                  setMobileMenuOpen(false);
+                }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                  assetMode === 'crypto'
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    : "text-muted-foreground"
+                )}
+              >
+                <Bitcoin className="h-4 w-4" />
+                Crypto
+              </button>
+            </div>
+            
             <SymbolSearch />
             <nav className="flex flex-col gap-2">
               {navItems.map((item) => (
